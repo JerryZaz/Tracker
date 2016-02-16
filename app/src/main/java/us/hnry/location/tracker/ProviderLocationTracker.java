@@ -1,10 +1,13 @@
 package us.hnry.location.tracker;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 
 public class ProviderLocationTracker implements LocationListener, LocationTracker {
 
@@ -16,7 +19,9 @@ public class ProviderLocationTracker implements LocationListener, LocationTracke
 
     private LocationManager lm;
 
-    public enum ProviderType{
+    private Context mContext;
+
+    public enum ProviderType {
         NETWORK,
         GPS
     }
@@ -31,27 +36,33 @@ public class ProviderLocationTracker implements LocationListener, LocationTracke
     private LocationUpdateListener listener;
 
     public ProviderLocationTracker(Context context, ProviderType type) {
-        lm = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
-        if(type == ProviderType.NETWORK){
+        lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (type == ProviderType.NETWORK) {
             provider = LocationManager.NETWORK_PROVIDER;
-        }
-        else{
+        } else {
             provider = LocationManager.GPS_PROVIDER;
         }
+        mContext = context;
     }
 
-    public void start(){
-        if(isRunning){
+    public void start() {
+        if (isRunning) {
             //Already running, do nothing
             return;
         }
 
         //The provider is on, so start getting updates.  Update current location
         isRunning = true;
+        if (ActivityCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat
+                .checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
         lm.requestLocationUpdates(provider, MIN_UPDATE_TIME, MIN_UPDATE_DISTANCE, this);
         lastLocation = null;
         lastTime = 0;
-        return;
     }
 
     public void start(LocationUpdateListener update) {
@@ -61,44 +72,65 @@ public class ProviderLocationTracker implements LocationListener, LocationTracke
     }
 
 
-    public void stop(){
-        if(isRunning){
+    public void stop() {
+        if (isRunning) {
+            if (ActivityCompat.checkSelfPermission(mContext,
+                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat
+                    .checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
             lm.removeUpdates(this);
             isRunning = false;
             listener = null;
         }
     }
 
-    public boolean hasLocation(){
-        if(lastLocation == null){
+    public boolean hasLocation() {
+        if (lastLocation == null) {
             return false;
         }
-        if(System.currentTimeMillis() - lastTime > 5 * MIN_UPDATE_TIME){
+        if (System.currentTimeMillis() - lastTime > 5 * MIN_UPDATE_TIME) {
             return false; //stale
         }
         return true;
     }
 
-    public boolean hasPossiblyStaleLocation(){
-        if(lastLocation != null){
+    public boolean hasPossiblyStaleLocation() {
+        if (lastLocation != null) {
             return true;
         }
-        return lm.getLastKnownLocation(provider)!= null;
+        if (ActivityCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat
+                .checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+        return lm.getLastKnownLocation(provider) != null;
     }
 
-    public Location getLocation(){
-        if(lastLocation == null){
+    public Location getLocation() {
+        if (lastLocation == null) {
             return null;
         }
-        if(System.currentTimeMillis() - lastTime > 5 * MIN_UPDATE_TIME){
+        if (System.currentTimeMillis() - lastTime > 5 * MIN_UPDATE_TIME) {
             return null; //stale
         }
         return lastLocation;
     }
 
-    public Location getPossiblyStaleLocation(){
-        if(lastLocation != null){
+    public Location getPossiblyStaleLocation() {
+        if (lastLocation != null) {
             return lastLocation;
+        }
+        if (ActivityCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat
+                .checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return null;
         }
         return lm.getLastKnownLocation(provider);
     }
