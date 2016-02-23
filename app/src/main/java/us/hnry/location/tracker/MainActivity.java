@@ -13,16 +13,25 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final int LOCATION_PERMISSION_RC = 101;
+    @Bind(R.id.button_connect)
+    Button mButtonConnect;
+    @Bind(R.id.button_disconnect)
+    Button mButtonDisconnect;
     private Tracking mTrackingService;
     private boolean status;
 
-    private Button mConnect;
-    private Button mDisconnect;
+    /*private Button mConnect;
+    private Button mDisconnect;*/
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -43,7 +52,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mConnect = (Button) findViewById(R.id.button_connect);
+        ButterKnife.bind(this);
+
+
+        /*mConnect = (Button) findViewById(R.id.button_connect);
         mConnect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -61,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
                 mDisconnect.setEnabled(false);
                 mConnect.setEnabled(true);
             }
-        });
+        });*/
     }
 
     @Override
@@ -72,7 +84,11 @@ public class MainActivity extends AppCompatActivity {
                 && ActivityCompat
                 .checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, LOCATION_PERMISSION_RC);
+            ActivityCompat
+                    .requestPermissions(this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION},
+                            LOCATION_PERMISSION_RC);
         }
     }
 
@@ -82,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         unbind();
     }
 
-    public void bind(){
+    public void bind() {
         if (ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat
@@ -95,11 +111,32 @@ public class MainActivity extends AppCompatActivity {
         startService(bindingIntent);
         status = true;
     }
-    public void unbind(){
-        if(status) {
+
+    public void unbind() {
+        if (status) {
             stopService(new Intent(this, Tracking.class));
             unbindService(serviceConnection);
             status = false;
+        }
+    }
+
+    @OnClick({R.id.button_connect, R.id.button_disconnect})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.button_connect:
+                if(!status){
+                    bind();
+                } else{
+                    Toast.makeText(this, "Service bound", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case R.id.button_disconnect:
+                if (status) {
+                    unbind();
+                } else {
+                    Toast.makeText(this, "Service not bound", Toast.LENGTH_SHORT).show();
+                }
+                break;
         }
     }
 }
